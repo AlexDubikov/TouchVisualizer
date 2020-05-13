@@ -19,9 +19,8 @@ final public class TouchView: UIImageView {
         get { return _config }
         set (value) {
             _config = value
-            image = self.config.image
-            tintColor = self.config.color
             timerLabel.textColor = self.config.color
+            backgroundColor = .clear
         }
     }
     
@@ -42,6 +41,28 @@ final public class TouchView: UIImageView {
         return label
     }()
     
+    @available(iOS 13.0, *)
+    private var blur: UIBlurEffect.Style {
+      .light
+    }
+    
+    lazy var blurView: UIVisualEffectView = {
+        let blurEffect = UIBlurEffect(style: blur)
+        let blurView = UIVisualEffectView(effect: blurEffect)
+        return blurView
+    }()
+    
+    private let redCircle: CAShapeLayer = {
+        let redCircle = CAShapeLayer()
+        redCircle.shadowColor = UIColor.black.cgColor
+        redCircle.shadowOffset = .zero
+        redCircle.shadowRadius = 3
+        redCircle.shadowOpacity = 0.5
+        redCircle.fillColor = UIColor(white: 1, alpha: 0.1).cgColor
+        return redCircle
+    }()
+    
+    
     // MARK: - Object life cycle
     convenience init() {
         self.init(frame: .zero)
@@ -50,8 +71,34 @@ final public class TouchView: UIImageView {
     override init(frame: CGRect) {
         _config = Configuration()
         super.init(frame: frame)
-        
+        self.addSubview(blurView)
+        self.layer.addSublayer(redCircle)
+
         self.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: _config.defaultSize)
+    }
+    
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        blurView.frame = self.bounds
+        blurView.layer.masksToBounds = true
+        blurView.layer.cornerRadius = bounds.width/2
+        
+        redCircle.path = UIBezierPath(ovalIn: bounds).cgPath
+        redCircle.position = CGPoint(x: 0, y: 0)
+
+
+        let mask = CAShapeLayer()
+        let diameter = bounds.width
+        let extraLineWidth: CGFloat = 6
+        let rect = CGRect(x: -extraLineWidth / 2, y: -extraLineWidth / 2, width: diameter, height: diameter)
+
+        mask.path = UIBezierPath(ovalIn: rect).cgPath
+        mask.fillColor = UIColor.clear.cgColor
+        mask.strokeColor = UIColor.white.cgColor
+        mask.lineWidth = 6
+        mask.position = CGPoint(x: extraLineWidth / 2, y: extraLineWidth / 2)
+        redCircle.mask = mask
+        
     }
 
     public required init?(coder aDecoder: NSCoder) {
